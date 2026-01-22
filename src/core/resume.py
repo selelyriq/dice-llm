@@ -1,14 +1,13 @@
 """Resume and LinkedIn profile parsing with auto-load functionality."""
 
 import json
-import os
 from pathlib import Path
-from typing import Dict, Optional, Tuple
+from typing import Dict, Optional, Tuple, List
 from datetime import datetime, timezone
 
 from PyPDF2 import PdfReader
 
-from core.schemas import ResumeProfile, LinkedInProfile
+from core.schemas import ResumeProfile, LinkedInProfile, ProfileVersion
 from integrations.llm import ClaudeClient
 from core.prompts import (
     RESUME_NORMALIZATION_PROMPT,
@@ -20,11 +19,13 @@ from core.prompts import (
 JOB_SCOUT_DIR = Path.home() / ".job-scout"
 PROFILE_PATH = JOB_SCOUT_DIR / "profile.json"
 LINKEDIN_PATH = JOB_SCOUT_DIR / "linkedin.json"
+PROFILE_HISTORY_DIR = JOB_SCOUT_DIR / "profile" / "history"
 
 
 def ensure_job_scout_dir():
-    """Ensure .job-scout directory exists."""
+    """Ensure .job-scout directory and subdirectories exist."""
     JOB_SCOUT_DIR.mkdir(exist_ok=True)
+    PROFILE_HISTORY_DIR.mkdir(parents=True, exist_ok=True)
 
 
 def extract_text_from_pdf(pdf_path: str) -> str:
@@ -306,7 +307,7 @@ def get_profile_status() -> Tuple[Optional[str], Optional[str], Optional[str]]:
         try:
             dt = datetime.fromisoformat(profile.last_updated)
             resume_date = dt.strftime("%Y-%m-%d %H:%M")
-        except:
+        except Exception:
             resume_date = profile.last_updated
 
     linkedin_date = None
@@ -314,7 +315,147 @@ def get_profile_status() -> Tuple[Optional[str], Optional[str], Optional[str]]:
         try:
             dt = datetime.fromisoformat(linkedin.last_updated)
             linkedin_date = dt.strftime("%Y-%m-%d %H:%M")
-        except:
+        except Exception:
             linkedin_date = linkedin.last_updated
 
     return name, resume_date, linkedin_date
+
+
+def archive_current_profile() -> Optional[ProfileVersion]:
+    """
+    Archive the current profile to history directory with timestamp-based filename.
+    Manages rotation to keep only the most recent 10 versions.
+
+    Returns:
+        ProfileVersion if profile was archived, None if no current profile exists
+    """
+    current_profile = load_existing_profile()
+    if not current_profile:
+        return None
+
+    ensure_job_scout_dir()
+
+    # Create version ID from timestamp
+    timestamp = datetime.now(timezone.utc)
+    version_id = timestamp.strftime("%Y%m%d_%H%M%S")
+
+    # Create ProfileVersion
+    profile_version = ProfileVersion(
+        version_id=version_id,
+        profile=current_profile,
+        archived_at=timestamp.isoformat(),
+        change_summary=None,  # Could be enhanced to detect changes
+    )
+
+    # Save to history directory
+    history_file = PROFILE_HISTORY_DIR / f"profile_{version_id}.json"
+    with open(history_file, "w") as f:
+        json.dump(profile_version.model_dump(), f, indent=2)
+
+    # Manage rotation: keep only 10 most recent versions
+    _rotate_profile_history(max_versions=10)
+
+    return profile_version
+
+
+def _rotate_profile_history(max_versions: int = 10):
+    """
+    Delete oldest profile versions to maintain max_versions limit.
+
+    Args:
+        max_versions: Maximum number of profile versions to keep
+    """
+    if not PROFILE_HISTORY_DIR.exists():
+        return
+
+    # Get all profile history files sorted by modification time (newest first)
+    history_files = sorted(
+        PROFILE_HISTORY_DIR.glob("profile_*.json"),
+        key=lambda p: p.stat().st_mtime,
+        reverse=True,
+    )
+
+    # Delete files beyond max_versions
+    for old_file in history_files[max_versions:]:
+        try:
+            old_file.unlink()
+        except Exception as e:
+            print(f"Warning: Could not delete old profile version {old_file}: {e}")
+
+
+def load_profile_history() -> List[ProfileVersion]:
+    """
+    Load all archived profile versions from history directory.
+
+    Returns:
+        List of ProfileVersion objects, sorted by archived_at (newest first)
+    """
+    if not PROFILE_HISTORY_DIR.exists():
+        return []
+
+    versions = []
+    for history_file in PROFILE_HISTORY_DIR.glob("profile_*.json"):
+        try:
+            with open(history_file, "r") as f:
+                data = json.load(f)
+            version = ProfileVersion(**data)
+            versions.append(version)
+        except Exception as e:
+            print(f"Warning: Could not load profile version from {history_file}: {e}")
+            continue
+
+    # Sort by archived_at timestamp (newest first)
+    versions.sort(key=lambda v: v.archived_at, reverse=True)
+    return versions
+
+
+def compare_profiles(current: ProfileVersion, previous: ProfileVersion) -> Dict[str, any]:
+    """
+    Compare two profile versions and return detailed comparison.
+
+    Args:
+        current: Newer profile version
+        previous: Older profile version
+
+    Returns:
+        Dictionary with comparison details
+    """
+    # Combine all skills from both profiles
+    current_skills = set(current.profile.core_skills + current.profile.secondary_skills)
+    previous_skills = set(previous.profile.core_skills + previous.profile.secondary_skills)
+
+    # Calculate skill changes
+    skills_added = sorted(list(current_skills - previous_skills))
+    skills_removed = sorted(list(previous_skills - current_skills))
+    skills_unchanged = sorted(list(current_skills & previous_skills))
+
+    # Title changes
+    title_changes = []
+    current_titles = set(current.profile.target_titles)
+    previous_titles = set(previous.profile.target_titles)
+
+    for title in current_titles - previous_titles:
+        title_changes.append({"type": "added", "title": title})
+    for title in previous_titles - current_titles:
+        title_changes.append({"type": "removed", "title": title})
+
+    # Experience change
+    experience_change = (
+        current.profile.years_experience_estimate - previous.profile.years_experience_estimate
+    )
+
+    # Keyword density
+    keyword_density_current = len(current.profile.keywords_to_emphasize)
+    keyword_density_previous = len(previous.profile.keywords_to_emphasize)
+
+    return {
+        "skills_added": skills_added,
+        "skills_removed": skills_removed,
+        "skills_unchanged": skills_unchanged,
+        "title_changes": title_changes,
+        "experience_change": experience_change,
+        "keyword_density_current": keyword_density_current,
+        "keyword_density_previous": keyword_density_previous,
+        "total_skills_current": len(current_skills),
+        "total_skills_previous": len(previous_skills),
+    }
