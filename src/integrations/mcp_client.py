@@ -221,6 +221,95 @@ class DiceMCPClient:
             raise last_exception
         raise RuntimeError("All retries exhausted without specific error")
 
+    async def bulk_search_jobs(
+        self,
+        keywords: List[str],
+        max_jobs_per_keyword: int = 100,
+        delay_between_queries: float = 2.0,
+        **search_params,
+    ) -> Dict[str, Any]:
+        """
+        Fetch multiple pages of jobs for multiple keywords with pagination.
+
+        Args:
+            keywords: List of search keywords
+            max_jobs_per_keyword: Maximum jobs to fetch per keyword (default: 100)
+            delay_between_queries: Delay between queries in seconds (default: 2.0)
+            **search_params: Additional parameters for search_jobs
+
+        Returns:
+            Dict with aggregated results: {"data": [...], "meta": {...}, "total_fetched": N}
+        """
+        all_jobs = []
+        total_fetched = 0
+        seen_job_ids = set()
+
+        for keyword in keywords:
+            keyword_jobs = 0
+            page = 1
+
+            while keyword_jobs < max_jobs_per_keyword:
+                # Calculate jobs to fetch on this page
+                remaining = max_jobs_per_keyword - keyword_jobs
+                jobs_per_page = min(100, remaining)  # Max 100 per page
+
+                try:
+                    result = await self.search_jobs(
+                        keyword=keyword,
+                        jobs_per_page=jobs_per_page,
+                        page_number=page,
+                        **search_params,
+                    )
+
+                    if result is None:
+                        print(
+                            f"Warning: search_jobs returned None for keyword '{keyword}', page {page}"
+                        )
+                        break
+
+                    jobs = result.get("data", [])
+
+                    if not jobs:
+                        break  # No more results for this keyword
+
+                    # Deduplicate by job ID
+                    for job in jobs:
+                        job_id = job.get("id")
+                        if job_id and job_id not in seen_job_ids:
+                            seen_job_ids.add(job_id)
+                            all_jobs.append(job)
+                            keyword_jobs += 1
+                            total_fetched += 1
+
+                    # Check if we've reached the limit
+                    if keyword_jobs >= max_jobs_per_keyword:
+                        break
+
+                    # Check if there are more pages
+                    meta = result.get("meta", {})
+                    if not meta.get("morePages", False):
+                        break
+
+                    page += 1
+
+                except Exception as e:
+                    # Log error and continue with next keyword
+                    print(f"Error fetching page {page} for '{keyword}': {e}")
+                    break
+
+            # Rate limiting between keywords
+            if delay_between_queries > 0:
+                await asyncio.sleep(delay_between_queries)
+
+        return {
+            "data": all_jobs,
+            "meta": {
+                "keywords_searched": len(keywords),
+                "total_fetched": total_fetched,
+                "unique_jobs": len(all_jobs),
+            },
+        }
+
     async def close(self):
         """Close the MCP client connection."""
         if self.session:
@@ -238,6 +327,10 @@ class DiceMCPClientSync:
     def search_jobs(self, **kwargs) -> Dict[str, Any]:
         """Synchronous wrapper for search_jobs."""
         return asyncio.run(self.client.search_jobs(**kwargs))
+
+    def bulk_search_jobs(self, keywords: List[str], **kwargs) -> Dict[str, Any]:
+        """Synchronous wrapper for bulk_search_jobs."""
+        return asyncio.run(self.client.bulk_search_jobs(keywords, **kwargs))
 
     def close(self):
         """Close the client connection."""

@@ -224,3 +224,114 @@ class SearchHistory(BaseModel):
     top_matches: List[JobMatch] = Field(
         default_factory=list, description="Top 10 job matches from this search"
     )
+
+
+class MarketQuery(BaseModel):
+    """Query parameters for market intelligence analysis."""
+
+    keywords: List[str] = Field(description="Job titles or skills to analyze")
+    location: Optional[str] = Field(default=None, description="Geographic location filter")
+    workplace_types: List[str] = Field(
+        default_factory=list, description="Workplace preferences: Remote, On-Site, Hybrid"
+    )
+    employment_types: List[str] = Field(
+        default_factory=list, description="Employment types to include"
+    )
+    posted_date: Optional[str] = Field(
+        default=None, description="Date range: ONE, THREE, SEVEN, or None for any"
+    )
+    jobs_per_query: int = Field(default=100, description="Number of jobs to fetch per keyword")
+
+
+class SkillFrequency(BaseModel):
+    """Skill demand frequency data."""
+
+    skill: str = Field(description="Skill name")
+    count: int = Field(description="Number of job postings mentioning this skill")
+    percentage: float = Field(description="Percentage of total jobs analyzed")
+
+
+class SalaryRange(BaseModel):
+    """Normalized salary information."""
+
+    min_salary: Optional[float] = Field(default=None, description="Minimum salary")
+    max_salary: Optional[float] = Field(default=None, description="Maximum salary")
+    currency: str = Field(default="USD", description="Currency code")
+    period: str = Field(default="annual", description="Salary period (annual/hourly)")
+
+
+class JobTrend(BaseModel):
+    """Aggregated trends for a specific keyword."""
+
+    keyword: str = Field(description="Keyword/job title analyzed")
+    total_jobs: int = Field(description="Total number of jobs found")
+    avg_salary: Optional[SalaryRange] = Field(default=None, description="Average salary range")
+    top_skills: List[SkillFrequency] = Field(
+        default_factory=list, description="Top skills mentioned in jobs"
+    )
+    workplace_distribution: Dict[str, int] = Field(
+        default_factory=dict, description="Distribution by workplace type"
+    )
+    location_distribution: Dict[str, int] = Field(
+        default_factory=dict, description="Top locations for this keyword"
+    )
+    seniority_distribution: Dict[str, int] = Field(
+        default_factory=dict, description="Junior/Mid/Senior breakdown"
+    )
+
+
+class MarketSnapshot(BaseModel):
+    """Snapshot of market intelligence data."""
+
+    timestamp: str = Field(
+        default_factory=lambda: datetime.utcnow().isoformat(),
+        description="When snapshot was created",
+    )
+    query: MarketQuery = Field(description="Query parameters used")
+    total_jobs_found: int = Field(description="Total unique jobs analyzed")
+    trends: List[JobTrend] = Field(description="Trends for each keyword")
+    ai_insights: str = Field(description="Claude-generated market insights")
+    cache_expiry: Optional[str] = Field(
+        default=None, description="When this snapshot expires (ISO timestamp)"
+    )
+    aggregate_skills: List[SkillFrequency] = Field(
+        default_factory=list, description="Aggregated top skills across all jobs"
+    )
+    aggregate_workplace_distribution: Dict[str, int] = Field(
+        default_factory=dict, description="Aggregated workplace type distribution across all jobs"
+    )
+
+
+class StorageSettings(BaseModel):
+    """User-configurable storage and retention settings."""
+
+    privacy_mode: bool = Field(default=True, description="Enable 24-hour cache with auto-cleanup")
+    cache_ttl_hours: int = Field(default=24, description="Time-to-live for cached data in hours")
+    auto_cleanup: bool = Field(default=True, description="Automatically clean up old data")
+    cleanup_threshold_mb: int = Field(
+        default=1024, description="Storage threshold for auto-cleanup (MB)"
+    )
+    max_market_snapshots: int = Field(
+        default=25, description="Maximum number of market snapshots to retain"
+    )
+    search_history_retention_days: int = Field(
+        default=30, description="Days to retain search history"
+    )
+    profile_versions_to_keep: int = Field(
+        default=10, description="Number of profile versions to maintain"
+    )
+
+
+class DataExport(BaseModel):
+    """Export manifest for data backups."""
+
+    export_timestamp: str = Field(
+        default_factory=lambda: datetime.utcnow().isoformat(),
+        description="When export was created",
+    )
+    included_categories: List[str] = Field(
+        description="Data categories included: profiles, searches, market"
+    )
+    total_size_mb: float = Field(description="Total size of exported data")
+    file_count: int = Field(description="Number of files in export")
+    export_path: str = Field(description="Path to export ZIP file")
