@@ -62,22 +62,38 @@ User Constraints:
 - Remote: {remote_preference}
 - Minimum Salary: {min_salary}
 
-Generate exactly 5 diverse Dice search queries as plain text strings (one per line).
-Each query should:
-1. Use natural language (Dice accepts conversational queries)
-2. Include relevant keywords from the candidate's core skills
-3. Prioritize skills with high LinkedIn endorsements (if available)
-4. Consider the candidate's seniority level
-5. Be diverse - cover different aspects of their experience
+Generate exactly 5 SHORT, KEYWORD-FOCUSED Dice search queries (one per line).
 
-Example format:
-Senior Platform Engineer with Kubernetes and Terraform experience
-Cloud Infrastructure roles using AWS and Python
-DevOps Engineer positions focused on CI/CD automation
-Site Reliability Engineer with container orchestration expertise
-Infrastructure as Code specialist with 5+ years experience
+CRITICAL RULES - Keep queries SIMPLE and SEARCH-FRIENDLY:
+✓ 3-6 words maximum per query
+✓ Focus on: [Job Title] + [1-2 Key Technologies]
+✓ Use simple, direct language
+✓ One main concept per query
+✗ NO long conversational phrases
+✗ NO combining 3+ technologies in one query
+✗ NO "with X years experience" or verbose descriptions
+✗ NO "remote positions" or other constraint words (filters handle this)
 
-Generate 5 queries now (one per line, no numbering):
+Query Patterns (use these formats):
+1. [Seniority] [Job Title] [Technology]
+2. [Job Title] [Technology Stack]
+3. [Technology] [Role Type]
+4. [Seniority] [Specialization]
+5. [Alternative Title] [Key Skill]
+
+Good Examples:
+Senior DevOps Engineer AWS
+Platform Engineer Kubernetes
+Cloud Architect Azure
+Site Reliability Engineer Python
+Infrastructure Engineer Terraform
+
+Bad Examples (TOO LONG/VERBOSE):
+❌ Senior Infrastructure Engineer with 5 years cloud platform experience
+❌ CI/CD pipeline engineer GitHub Actions ArgoCD deployment automation
+❌ Cloud Engineer with AWS and Terraform automation experience remote
+
+Generate 5 SHORT, SIMPLE queries now (one per line, no numbering):
 """
 
 # Job ranking prompt

@@ -1,6 +1,6 @@
 """Pydantic schemas for resume profiles, LinkedIn profiles, and job data."""
 
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import Dict, List, Optional
 from pydantic import BaseModel, Field
 
@@ -35,7 +35,7 @@ class ResumeProfile(BaseModel):
         description="Which sources were used: {'resume': True, 'linkedin': False}",
     )
     last_updated: str = Field(
-        default_factory=lambda: datetime.utcnow().isoformat(),
+        default_factory=lambda: datetime.now(timezone.utc).isoformat(),
         description="ISO timestamp of last profile update",
     )
 
@@ -84,7 +84,7 @@ class LinkedInProfile(BaseModel):
     )
     extracted_name: Optional[str] = Field(default=None, description="Name from LinkedIn profile")
     last_updated: str = Field(
-        default_factory=lambda: datetime.utcnow().isoformat(),
+        default_factory=lambda: datetime.now(timezone.utc).isoformat(),
         description="ISO timestamp of last update",
     )
 
@@ -212,7 +212,7 @@ class SearchHistory(BaseModel):
     """Record of a search session."""
 
     timestamp: str = Field(
-        default_factory=lambda: datetime.utcnow().isoformat(),
+        default_factory=lambda: datetime.now(timezone.utc).isoformat(),
         description="When search was executed",
     )
     constraints: JobConstraints = Field(description="Constraints used for this search")
@@ -284,7 +284,7 @@ class MarketSnapshot(BaseModel):
     """Snapshot of market intelligence data."""
 
     timestamp: str = Field(
-        default_factory=lambda: datetime.utcnow().isoformat(),
+        default_factory=lambda: datetime.now(timezone.utc).isoformat(),
         description="When snapshot was created",
     )
     query: MarketQuery = Field(description="Query parameters used")
@@ -326,7 +326,7 @@ class DataExport(BaseModel):
     """Export manifest for data backups."""
 
     export_timestamp: str = Field(
-        default_factory=lambda: datetime.utcnow().isoformat(),
+        default_factory=lambda: datetime.now(timezone.utc).isoformat(),
         description="When export was created",
     )
     included_categories: List[str] = Field(

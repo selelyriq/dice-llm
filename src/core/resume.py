@@ -4,7 +4,7 @@ import json
 import os
 from pathlib import Path
 from typing import Dict, Optional, Tuple
-from datetime import datetime
+from datetime import datetime, timezone
 
 from PyPDF2 import PdfReader
 
@@ -177,7 +177,7 @@ def merge_profiles(resume_data: Optional[Dict], linkedin_data: Optional[Dict]) -
 
     # Add sources and timestamp
     merged["sources"] = sources
-    merged["last_updated"] = datetime.utcnow().isoformat()
+    merged["last_updated"] = datetime.now(timezone.utc).isoformat()
 
     # Create ResumeProfile with validation
     return ResumeProfile(**merged)
