@@ -207,3 +207,66 @@ Workplace: {", ".join(job_dict.get("workplaceTypes", []))}
 Posted: {job_dict.get("postedDate", "Unknown")}
 """
     return summary
+
+
+# Batch market analysis prompt
+BATCH_MARKET_ANALYSIS_PROMPT = """You are analyzing a batch of job postings to extract market intelligence trends.
+
+Analyze these {job_count} job postings and provide aggregated insights:
+
+{jobs_json}
+
+Extract the following market intelligence in JSON format:
+{{
+  "top_skills": [
+    {{"skill": "skill name", "count": number of jobs mentioning it, "percentage": percentage of total jobs}}
+  ],
+  "salary_data": [
+    {{"min": minimum salary (numeric), "max": maximum salary (numeric), "currency": "USD"}}
+  ],
+  "workplace_distribution": {{
+    "Remote": count,
+    "Hybrid": count,
+    "On-Site": count
+  }},
+  "location_distribution": {{
+    "city, state": count
+  }},
+  "seniority_distribution": {{
+    "Junior": count (jobs mentioning junior/entry/associate),
+    "Mid": count (jobs mentioning mid-level/intermediate),
+    "Senior": count (jobs mentioning senior/lead/principal/staff)
+  }},
+  "common_requirements": [
+    "frequently mentioned requirement or qualification"
+  ],
+  "emerging_trends": [
+    "notable patterns or trending technologies"
+  ]
+}}
+
+Focus on:
+1. Technical skills and tools (programming languages, frameworks, platforms)
+2. Salary ranges (extract min/max from salary strings, convert hourly to annual)
+3. Experience level indicators in job titles and descriptions
+4. Common certifications or qualifications
+5. Emerging technologies or methodologies
+
+Be precise with skill extraction - use exact technology names, not generic terms.
+"""
+
+
+def generate_market_insights(trends_dict: Dict) -> str:
+    """Generate AI insights prompt for market trends."""
+    return f"""Based on this market analysis data, provide strategic insights:
+
+{trends_dict}
+
+Write 3-4 paragraphs covering:
+1. **Skill Demand**: Which skills are most in-demand and why
+2. **Salary Landscape**: Salary ranges and what drives higher compensation
+3. **Market Opportunities**: Where the best opportunities are (remote vs location, seniority levels)
+4. **Recommendations**: What job seekers should focus on to maximize their prospects
+
+Write in a helpful, data-driven tone. Cite specific numbers from the data.
+"""
