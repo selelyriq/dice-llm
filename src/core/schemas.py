@@ -322,6 +322,44 @@ class StorageSettings(BaseModel):
     )
 
 
+class ProfileVersion(BaseModel):
+    """Archived snapshot of a profile at a specific point in time."""
+
+    version_id: str = Field(description="Unique identifier for this version (timestamp-based)")
+    profile: ResumeProfile = Field(description="The profile data at this point in time")
+    archived_at: str = Field(
+        default_factory=lambda: datetime.now(timezone.utc).isoformat(),
+        description="When this version was archived",
+    )
+    change_summary: Optional[str] = Field(
+        default=None, description="Brief summary of changes from previous version"
+    )
+
+
+class ProfileComparison(BaseModel):
+    """Comparison result between two profile versions."""
+
+    current_version: ProfileVersion = Field(description="Current/newer profile version")
+    previous_version: ProfileVersion = Field(description="Previous/older profile version")
+    skills_added: List[str] = Field(
+        default_factory=list, description="Skills present in current but not in previous"
+    )
+    skills_removed: List[str] = Field(
+        default_factory=list, description="Skills present in previous but not in current"
+    )
+    skills_unchanged: List[str] = Field(
+        default_factory=list, description="Skills present in both versions"
+    )
+    title_changes: List[Dict[str, str]] = Field(
+        default_factory=list, description="Changes in target titles"
+    )
+    experience_change: Optional[int] = Field(
+        default=None, description="Change in years of experience (positive or negative)"
+    )
+    keyword_density_current: int = Field(description="Number of keywords in current version")
+    keyword_density_previous: int = Field(description="Number of keywords in previous version")
+
+
 class DataExport(BaseModel):
     """Export manifest for data backups."""
 
