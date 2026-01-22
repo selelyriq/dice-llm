@@ -3,7 +3,7 @@
 import json
 import asyncio
 from pathlib import Path
-from datetime import datetime, timedelta
+from datetime import datetime, timezone, timedelta
 from typing import Dict, List, Optional, Any
 from collections import Counter
 
@@ -137,12 +137,12 @@ async def fetch_market_snapshot(
 
     # Create snapshot
     snapshot = MarketSnapshot(
-        timestamp=datetime.utcnow().isoformat(),
+        timestamp=datetime.now(timezone.utc).isoformat(),
         query=query,
         total_jobs_found=len(jobs),
         trends=trends,
         ai_insights=insights,
-        cache_expiry=(datetime.utcnow() + timedelta(hours=cache_ttl_hours)).isoformat(),
+        cache_expiry=(datetime.now(timezone.utc) + timedelta(hours=cache_ttl_hours)).isoformat(),
         aggregate_skills=all_jobs_skills[:20],
         aggregate_workplace_distribution=dict(aggregate_workplace_dist),
     )

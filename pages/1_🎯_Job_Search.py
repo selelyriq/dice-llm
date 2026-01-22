@@ -25,6 +25,7 @@ from core.resume import (
     get_profile_status,
     JOB_SCOUT_DIR,
 )
+from core.storage import save_search
 from core.ranker import (
     generate_queries,
     rank_jobs,
@@ -56,6 +57,10 @@ if "job_matches" not in st.session_state:
 if "search_executed" not in st.session_state:
     st.session_state.search_executed = False
 
+# Check if there's a rerun request from Search History page
+if "rerun_constraints" in st.session_state:
+    st.info("🔄 Loaded constraints from Search History! Review and click 'Search Jobs' to execute.")
+
 
 def save_search_history(
     constraints: JobConstraints,
@@ -63,10 +68,7 @@ def save_search_history(
     queries_executed: List[str],
     matches: List[JobMatch],
 ):
-    """Append search to history file."""
-    history_path = JOB_SCOUT_DIR / "searches.jsonl"
-    JOB_SCOUT_DIR.mkdir(exist_ok=True)
-
+    """Save search to history using storage module."""
     history_entry = SearchHistory(
         timestamp=datetime.utcnow().isoformat(),
         constraints=constraints,
@@ -75,9 +77,7 @@ def save_search_history(
         total_results=len(matches),
         top_matches=matches[:10],
     )
-
-    with open(history_path, "a") as f:
-        f.write(history_entry.model_dump_json() + "\n")
+    save_search(history_entry)
 
 
 def main():
@@ -142,24 +142,36 @@ def main():
         # Search Constraints
         st.subheader("🔍 Search Constraints")
 
+        # Check if we're loading from history
+        rerun_constraints = st.session_state.get("rerun_constraints")
+
         workplace_types = st.multiselect(
             "Workplace Type",
             options=["Remote", "Hybrid", "On-Site"],
-            default=["Remote"],
+            default=rerun_constraints.workplace_types if rerun_constraints else ["Remote"],
         )
 
         employment_types = st.multiselect(
             "Employment Type",
             options=["FULLTIME", "CONTRACTS", "PARTTIME", "THIRD_PARTY"],
-            default=["FULLTIME"],
+            default=rerun_constraints.employment_types if rerun_constraints else ["FULLTIME"],
         )
 
         min_salary = st.number_input(
-            "Minimum Salary ($)", min_value=0, value=0, step=5000, help="Leave at 0 for no minimum"
+            "Minimum Salary ($)",
+            min_value=0,
+            value=rerun_constraints.min_salary
+            if (rerun_constraints and rerun_constraints.min_salary)
+            else 0,
+            step=5000,
+            help="Leave at 0 for no minimum",
         )
 
         location = st.text_input(
             "Location (optional)",
+            value=rerun_constraints.location
+            if (rerun_constraints and rerun_constraints.location)
+            else "",
             placeholder="San Francisco, CA",
             help="Leave empty for remote-only search",
         )
@@ -168,7 +180,9 @@ def main():
             "Search Radius (miles)",
             min_value=0,
             max_value=100,
-            value=25,
+            value=rerun_constraints.radius
+            if (rerun_constraints and rerun_constraints.radius)
+            else 25,
             disabled=not location,
         )
 
@@ -176,11 +190,26 @@ def main():
             "Posted Within",
             options=["ONE", "THREE", "SEVEN"],
             format_func=lambda x: {"ONE": "1 day", "THREE": "3 days", "SEVEN": "7 days"}[x],
-            index=2,
+            index=["ONE", "THREE", "SEVEN"].index(rerun_constraints.posted_date)
+            if (rerun_constraints and rerun_constraints.posted_date in ["ONE", "THREE", "SEVEN"])
+            else 2,
         )
 
         sponsor_visa = st.checkbox("Requires Visa Sponsorship", value=False)
         easy_apply_only = st.checkbox("Easy Apply Only", value=False)
+
+        st.divider()
+
+        # Max jobs to rank
+        st.subheader("🎯 Ranking Limit")
+        max_jobs_to_rank = st.number_input(
+            "Max jobs to rank",
+            min_value=5,
+            max_value=50,
+            value=10,
+            step=5,
+            help="Limit AI ranking to the most recent N jobs (saves time and cost)",
+        )
 
     # Main content: Three columns
     col1, col2, col3 = st.columns([1, 1, 1])
@@ -296,29 +325,75 @@ def main():
                                 if easy_apply_only:
                                     search_params["easy_apply"] = True
 
+                                # Debug output
+                                with st.expander(
+                                    f"🔍 Debug: Search params for '{query[:40]}'", expanded=False
+                                ):
+                                    st.json(search_params)
+
                                 # Call MCP client
                                 result = asyncio.run(mcp_client.search_jobs(**search_params))
                                 jobs = result.get("data", [])
+
+                                # Show job count for this query
+                                st.caption(f"✓ Query '{query[:50]}...' returned {len(jobs)} jobs")
+
                                 all_jobs.extend(jobs)
 
                             except Exception as e:
-                                st.warning(f"Query '{query[:50]}...' failed: {str(e)}")
+                                st.error(f"❌ Query '{query[:50]}...' failed: {str(e)}")
+                                import traceback
+
+                                with st.expander("Error details", expanded=False):
+                                    st.code(traceback.format_exc())
                                 continue
+
+                        # Show total results
+                        st.info(f"📊 Total jobs retrieved: {len(all_jobs)}")
 
                         # Deduplicate
                         unique_jobs = deduplicate_jobs(all_jobs)
-                        st.info(
-                            f"Found {len(unique_jobs)} unique jobs from {len(all_jobs)} total results"
+                        st.success(
+                            f"✅ After deduplication: {len(unique_jobs)} unique jobs (removed {len(all_jobs) - len(unique_jobs)} duplicates)"
                         )
 
+                        if not unique_jobs:
+                            st.warning("⚠️ No jobs found matching your criteria. Try:")
+                            st.markdown(
+                                "- Broadening your workplace types\n- Removing location constraints\n- Using simpler, more general queries\n- Checking if the MCP server is running"
+                            )
+                            st.stop()
+
+                        # Sort by posted date (most recent first) and limit to top 20 for ranking
+                        # This saves time and API costs while focusing on the freshest opportunities
+                        try:
+                            from datetime import datetime
+
+                            unique_jobs_sorted = sorted(
+                                unique_jobs, key=lambda job: job.get("postedDate", ""), reverse=True
+                            )
+                        except:
+                            unique_jobs_sorted = unique_jobs
+
+                        # Limit to user-specified number of most recent jobs
+                        jobs_to_rank = unique_jobs_sorted[:max_jobs_to_rank]
+
+                        if len(unique_jobs) > max_jobs_to_rank:
+                            st.info(
+                                f"ℹ️ Ranking the {max_jobs_to_rank} most recent jobs out of {len(unique_jobs)} total (sorted by posting date)"
+                            )
+
                         # Rank jobs
-                        matches = rank_jobs(
-                            st.session_state.profile,
-                            unique_jobs,
-                            weights,
-                            claude_client,
-                            min_score=0.0,
-                        )
+                        with st.spinner(f"Ranking {len(jobs_to_rank)} jobs with AI..."):
+                            matches = rank_jobs(
+                                st.session_state.profile,
+                                jobs_to_rank,
+                                weights,
+                                claude_client,
+                                min_score=0.0,
+                            )
+
+                        st.success(f"✅ Ranked {len(matches)} jobs successfully")
 
                         st.session_state.job_matches = matches
                         st.session_state.search_executed = True

@@ -190,8 +190,20 @@ def generate_queries(
         List of 5 query strings
     """
     from .prompts import QUERY_GENERATION_PROMPT
+    import random
 
     profile_summary = format_profile_summary(profile.model_dump())
+
+    # Add a random seed to encourage variety in simple queries
+    seed_phrases = [
+        "Focus on different seniority levels.",
+        "Vary between different core technologies.",
+        "Try alternative job titles.",
+        "Mix infrastructure and development roles.",
+        "Include both specializations and general roles.",
+    ]
+
+    variety_hint = random.choice(seed_phrases)
 
     prompt = QUERY_GENERATION_PROMPT.format(
         profile_summary=profile_summary,
@@ -202,21 +214,27 @@ def generate_queries(
         min_salary=constraints.get("min_salary", "Not specified"),
     )
 
+    # Add variety hint
+    prompt += f"\n\nVariety note: {variety_hint}"
+
     response = claude_client.generate(
         prompt=prompt,
-        system_prompt="You are a job search expert. Generate diverse, effective queries.",
-        max_tokens=512,
-        temperature=0.7,
+        system_prompt="You are a job search expert. Generate SHORT, SIMPLE, keyword-focused queries. Keep them under 6 words. Focus on job title + 1-2 technologies max.",
+        max_tokens=256,
+        temperature=0.8,  # Moderate temperature for some variety but more predictable
     )
 
     # Parse response - should be one query per line
     queries = [line.strip() for line in response.strip().split("\n") if line.strip()]
 
+    # Remove any numbering or bullets
+    queries = [q.lstrip("0123456789.-) ") for q in queries]
+
     # Ensure we have exactly 5 queries
     if len(queries) < 5:
         # Pad with variations of first query
         while len(queries) < 5 and queries:
-            queries.append(queries[0])
+            queries.append(queries[0] + " opportunities")
 
     return queries[:5]
 
