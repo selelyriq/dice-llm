@@ -1,4 +1,4 @@
-# Job Scout - Implementation Complete ✅
+# ScriptClub Scout - Implementation Complete ✅
 
 ## What Was Built
 

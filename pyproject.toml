@@ -1,5 +1,5 @@
 [project]
-name = "job-scout"
+name = "scriptclub-scout"
 version = "0.1.0"
 description = "Local-first job search assistant with Dice MCP integration"
 readme = "README.md"

@@ -1,4 +1,4 @@
-# Job Scout
+# ScriptClub Scout
 
 A local-first job search assistant that intelligently matches your resume and LinkedIn profile to technology jobs on Dice.com using AI-powered analysis.
 

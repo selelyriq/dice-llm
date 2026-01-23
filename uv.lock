@@ -639,48 +639,6 @@ wheels = [
 ]
 
 [[package]]
-name = "job-scout"
-version = "0.1.0"
-source = { editable = "." }
-dependencies = [
-    { name = "altair" },
-    { name = "anthropic" },
-    { name = "httpx" },
-    { name = "mcp" },
-    { name = "plotly" },
-    { name = "pydantic" },
-    { name = "pypdf2" },
-    { name = "python-dotenv" },
-    { name = "streamlit" },
-]
-
-[package.optional-dependencies]
-dev = [
-    { name = "black" },
-    { name = "pytest" },
-    { name = "pytest-asyncio" },
-    { name = "ruff" },
-]
-
-[package.metadata]
-requires-dist = [
-    { name = "altair", specifier = ">=5.2.0" },
-    { name = "anthropic", specifier = ">=0.18.0" },
-    { name = "black", marker = "extra == 'dev'", specifier = ">=24.0.0" },
-    { name = "httpx", specifier = ">=0.27.0" },
-    { name = "mcp", specifier = ">=0.9.0" },
-    { name = "plotly", specifier = ">=5.18.0" },
-    { name = "pydantic", specifier = ">=2.6.0" },
-    { name = "pypdf2", specifier = ">=3.0.0" },
-    { name = "pytest", marker = "extra == 'dev'", specifier = ">=8.0.0" },
-    { name = "pytest-asyncio", marker = "extra == 'dev'", specifier = ">=0.23.0" },
-    { name = "python-dotenv", specifier = ">=1.0.0" },
-    { name = "ruff", marker = "extra == 'dev'", specifier = ">=0.2.0" },
-    { name = "streamlit", specifier = ">=1.31.0" },
-]
-provides-extras = ["dev"]
-
-[[package]]
 name = "jsonschema"
 version = "4.26.0"
 source = { registry = "https://pypi.org/simple" }
@@ -1774,6 +1732,48 @@ wheels = [
     { url = "https://files.pythonhosted.org/packages/c2/55/6384b0b8ce731b6e2ade2b5449bf07c0e4c31e8a2e68ea65b3bafadcecc5/ruff-0.14.13-py3-none-win_amd64.whl", hash = "sha256:6070bd026e409734b9257e03e3ef18c6e1a216f0435c6751d7a8ec69cb59abef", size = 14097887, upload-time = "2026-01-15T20:15:01.48Z" },
     { url = "https://files.pythonhosted.org/packages/4d/e1/7348090988095e4e39560cfc2f7555b1b2a7357deba19167b600fdf5215d/ruff-0.14.13-py3-none-win_arm64.whl", hash = "sha256:7ab819e14f1ad9fe39f246cfcc435880ef7a9390d81a2b6ac7e01039083dd247", size = 13080224, upload-time = "2026-01-15T20:14:45.853Z" },
 ]
+
+[[package]]
+name = "scriptclub-scout"
+version = "0.1.0"
+source = { editable = "." }
+dependencies = [
+    { name = "altair" },
+    { name = "anthropic" },
+    { name = "httpx" },
+    { name = "mcp" },
+    { name = "plotly" },
+    { name = "pydantic" },
+    { name = "pypdf2" },
+    { name = "python-dotenv" },
+    { name = "streamlit" },
+]
+
+[package.optional-dependencies]
+dev = [
+    { name = "black" },
+    { name = "pytest" },
+    { name = "pytest-asyncio" },
+    { name = "ruff" },
+]
+
+[package.metadata]
+requires-dist = [
+    { name = "altair", specifier = ">=5.2.0" },
+    { name = "anthropic", specifier = ">=0.18.0" },
+    { name = "black", marker = "extra == 'dev'", specifier = ">=24.0.0" },
+    { name = "httpx", specifier = ">=0.27.0" },
+    { name = "mcp", specifier = ">=0.9.0" },
+    { name = "plotly", specifier = ">=5.18.0" },
+    { name = "pydantic", specifier = ">=2.6.0" },
+    { name = "pypdf2", specifier = ">=3.0.0" },
+    { name = "pytest", marker = "extra == 'dev'", specifier = ">=8.0.0" },
+    { name = "pytest-asyncio", marker = "extra == 'dev'", specifier = ">=0.23.0" },
+    { name = "python-dotenv", specifier = ">=1.0.0" },
+    { name = "ruff", marker = "extra == 'dev'", specifier = ">=0.2.0" },
+    { name = "streamlit", specifier = ">=1.31.0" },
+]
+provides-extras = ["dev"]
 
 [[package]]
 name = "six"

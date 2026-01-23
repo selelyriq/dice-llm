@@ -1,1 +1,1 @@
-"""UI components and visualization utilities for Job Scout."""
+"""UI components and visualization utilities for ScriptClub Scout."""

@@ -1,4 +1,4 @@
-"""Main Streamlit application for Job Scout."""
+"""Main Streamlit application for ScriptClub Scout."""
 
 import asyncio
 import json
@@ -33,7 +33,7 @@ from integrations.mcp_client import DiceMCPClient
 
 # Page config
 st.set_page_config(
-    page_title="Job Scout",
+    page_title="ScriptClub Scout",
     page_icon="🎯",
     layout="wide",
     initial_sidebar_state="expanded",
@@ -80,7 +80,7 @@ def main():
     """Main application logic."""
 
     # Title
-    st.title("🎯 Job Scout")
+    st.title("🎯 ScriptClub Scout")
     st.markdown("*Local-first AI job search assistant powered by Dice MCP*")
 
     # Sidebar: Profile & Constraints

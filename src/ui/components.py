@@ -1,4 +1,4 @@
-"""Reusable UI components for Job Scout Streamlit pages."""
+"""Reusable UI components for ScriptClub Scout Streamlit pages."""
 
 import streamlit as st
 from typing import Optional, Dict, Any, List

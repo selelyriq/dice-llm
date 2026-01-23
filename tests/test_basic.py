@@ -1,4 +1,4 @@
-"""Tests for Job Scout modules."""
+"""Tests for ScriptClub Scout modules."""
 
 import pytest
 

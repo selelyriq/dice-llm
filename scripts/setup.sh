@@ -3,7 +3,7 @@
 
 set -e
 
-echo "🚀 Setting up Job Scout..."
+echo "🚀 Setting up ScriptClub Scout..."
 
 # Check if uv is installed
 if ! command -v uv &> /dev/null; then

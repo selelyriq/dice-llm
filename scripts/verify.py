@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Verify Job Scout installation and configuration."""
+"""Verify ScriptClub Scout installation and configuration."""
 
 import sys
 import os
@@ -85,7 +85,7 @@ def check_project_structure():
 
 def main():
     """Run all checks."""
-    print("🔍 Verifying Job Scout Installation\n")
+    print("🔍 Verifying ScriptClub Scout Installation\n")
 
     print("=" * 50)
     print("Python Version")
