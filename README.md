@@ -19,12 +19,12 @@ A local-first job search assistant that intelligently matches your resume and Li
 - [uv](https://github.com/astral-sh/uv) package manager
 - Anthropic API key (get one at [console.anthropic.com](https://console.anthropic.com))
 
-### Installation
+### Clone & Run
 
 ```bash
 # Clone the repository
-git clone <repo-url>
-cd job-scout
+git clone https://github.com/selelyriq/dice-llm.git
+cd dice-llm
 
 # Copy environment template and add your API key
 cp .env.example .env
@@ -33,11 +33,20 @@ cp .env.example .env
 # Install dependencies
 uv sync
 
-# Run the app
-uv run streamlit run src/app.py
+# Run the Streamlit multi-page app
+uv run streamlit run Home.py
 ```
 
-The app will open at `http://localhost:8501`
+The app will open at `http://localhost:8501`.
+
+### What You’ll See
+
+- **Home**: Overview and status
+- **Job Search**: Upload profile docs, generate queries, execute search
+- **Market Intelligence**: Trends and skill demand
+- **Search History**: Past runs and query audit trail
+- **Profile Comparison**: Resume vs LinkedIn differences
+- **Settings**: API key validation and weight tuning
 
 ## Usage
 
